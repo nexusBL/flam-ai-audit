@@ -51,3 +51,67 @@ Using the measured results:
 - Batch 48: 1298.5 tok/s
 
 Running at batch 24 provides approximately **24% higher throughput** while avoiding scheduler preemption.
+
+## B3
+
+### Misread column
+
+The report interprets `reported_tok_s` as useful generated-token throughput.
+
+However, the benchmark compares workloads with different prompt lengths and generation lengths, so `reported_tok_s` cannot be directly compared across rows.
+
+### Honest goodput
+
+Batch 24
+
+Generated tokens:
+
+24 × 512 = 12288
+
+Wall clock:
+
+61.16 s
+
+Goodput:
+
+12288 / 61.16 = **200.9 generated tokens/s**
+
+A second estimate using ITL produces a similar order of magnitude, confirming that useful decode throughput is much lower than the reported throughput counter.
+
+### Correct conclusion
+
+Longer prompts do **not** inherently improve serving throughput.
+
+The reported throughput metric mixes prompt prefill and decoding work and should not be extrapolated linearly for capacity planning.
+
+The report incorrectly interprets `reported_tok_s` as useful generated-token throughput and compares workloads with different prompt lengths directly.
+
+Using the benchmark log, actual generated-token goodput is:
+
+- Batch 24 (3584 prompt): 12288 generated tokens / 61.16 s = 200.9 tok/s
+
+This is substantially lower than the reported throughput of 1607.4 tok/s.
+
+Repeating the calculation across all long-context rows shows that generated-token goodput decreases beyond batch 24 (200.9 → 173.0 → 162.3 tok/s), contradicting the report's claim that throughput scales linearly with batch size or improves with longer prompts.
+
+The `reported_tok_s` counter appears to measure total processed tokens
+(prompt + generated), not only generated output.
+
+Evidence:
+
+Short workload:
+- Prompt = 512
+- Generation = 256
+- (512 + 256) / 256 = 3
+- Reported/Goodput = 3.00×
+
+Long workload:
+- Prompt = 3584
+- Generation = 512
+- (3584 + 512) / 512 = 8
+- Reported/Goodput = 8.00×
+
+Therefore, REPORT_v0 incorrectly compares `reported_tok_s` across workloads
+with different prompt lengths. This leads to the false conclusion that
+longer prompts improve throughput and that throughput scales linearly with
+batch size.
