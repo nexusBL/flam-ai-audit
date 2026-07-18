@@ -20,3 +20,11 @@ AI assisted with:
 - Reviewing experimental methodology.
 
 All reported conclusions were verified by executing the experiments locally and recording the measured outputs.
+
+## Reflection
+
+AI accelerated experiment planning, code generation, and report organization.
+
+However, every numerical claim included in the final submission was reproduced locally using the provided starter kit or additional experiments written during the audit.
+
+During the audit, AI also suggested using the FLORES dataset. That approach was abandoned after discovering access restrictions, and an alternative publicly available multilingual corpus was selected instead.

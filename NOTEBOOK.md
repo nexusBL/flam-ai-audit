@@ -160,3 +160,36 @@ python partB/b4_verify.py
 ### Conclusion
 
 As KV cache utilization approaches saturation, scheduler preemption increases and throughput decreases. This supports the hypothesis that the workload becomes KV-cache limited rather than compute limited.
+
+## Experiment 9 – Deployment Strategy Evaluation
+
+### Goal
+
+Evaluate the feasibility of the three proposed deployment strategies under the provided engineering constraints.
+
+### Method
+
+Estimated reviewer capacity using:
+
+- 20 review hours
+- 50 samples/hour
+
+Implemented:
+
+```bash
+python partC/estimate.py
+```
+
+### Results
+
+Reviewer capacity: 1000 samples
+
+Synthetic dataset: 50,000 samples
+
+Review coverage: 2%
+
+### Conclusion
+
+A sampled review process is feasible within the available reviewer budget.
+
+Given the timeline and hardware constraints, an inference-time rewriter provides the best trade-off between deployment risk and conversational quality.
