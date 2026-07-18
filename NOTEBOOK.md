@@ -133,3 +133,30 @@ The report's statement that "any tokenizer will struggle" is not supported.
 
 The observed fertility depends strongly on tokenizer choice.
 
+## Experiment 8 – Validate KV Cache Saturation Hypothesis
+
+### Hypothesis
+
+The throughput drop observed after batch size 24 is caused by KV-cache saturation leading to scheduler preemption.
+
+### Method
+
+Filtered the benchmark log to inspect runs with KV cache utilization above 90%.
+
+Command:
+
+```bash
+python partB/b4_verify.py
+```
+
+### Results
+
+| Batch | KV Util | Preempted | Reported tok/s |
+|------:|---------:|----------:|---------------:|
+|24|0.93|0|1607.4|
+|32|0.97|7|1384.0|
+|48|0.97|23|1298.5|
+
+### Conclusion
+
+As KV cache utilization approaches saturation, scheduler preemption increases and throughput decreases. This supports the hypothesis that the workload becomes KV-cache limited rather than compute limited.

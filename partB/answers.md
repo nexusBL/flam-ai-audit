@@ -115,3 +115,17 @@ Therefore, REPORT_v0 incorrectly compares `reported_tok_s` across workloads
 with different prompt lengths. This leads to the false conclusion that
 longer prompts improve throughput and that throughput scales linearly with
 batch size.
+
+## B4
+
+I would monitor the scheduler's **preempted sequence count** together with **KV-cache utilization**.
+
+Evidence from the benchmark shows:
+
+- Batch 24: KV utilization = 93%, Preempted = 0, Throughput = 1607.4 tok/s
+- Batch 32: KV utilization = 97%, Preempted = 7, Throughput = 1384.0 tok/s
+- Batch 48: KV utilization = 97%, Preempted = 23, Throughput = 1298.5 tok/s
+
+The increasing number of preempted sequences as KV-cache utilization approaches saturation supports the conclusion that the throughput drop is caused by KV-cache pressure rather than insufficient compute capacity.
+
+In production, I would expect preempted sequences to remain close to zero during healthy operation and increase rapidly once KV-cache utilization exceeds approximately 95%.
