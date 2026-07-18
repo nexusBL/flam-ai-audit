@@ -1,29 +1,28 @@
-## B2
+|## B1
 
-### Throughput anomaly
+### KV Cache Size
 
-Throughput increases from batch 4 to batch 24, peaking at **1607 tok/s**.
+Formula:
 
-However, increasing the batch further causes throughput to decrease:
+28 layers × 8 KV heads × 128 head dimension × 2 (K+V) × 2 bytes (FP16)
 
-- Batch 32 → 1384 tok/s
-- Batch 48 → 1298 tok/s
+= **114,688 bytes/token**
 
-### Mechanism
+### Maximum Concurrent Sequences
 
-The drop coincides with KV-cache utilization reaching 97% and scheduler preemption increasing from 0 to 7 and then 23 sequences.
+Available KV memory:
 
-The system becomes KV-cache limited rather than compute limited, so scheduler overhead reduces effective throughput.
+24 GB × 0.92 − 1.6 GB ≈ 20.48 GB
 
-### Recommendation
+Memory per 4096-token sequence:
 
-Limit the batch size to approximately 24 for this workload.
+114,688 × 4096 = 469,762,048 bytes ≈ 448 MB
 
-Expected improvement:
+Maximum concurrent sequences:
 
-1298 tok/s → 1607 tok/s
+≈46 sequences
 
-≈24% higher throughput while avoiding scheduler preemption.
+This matches the benchmark where throughput begins degrading as KV utilization approaches saturation.
 
 ## B2
 
@@ -56,65 +55,38 @@ Running at batch 24 provides approximately **24% higher throughput** while avoid
 
 ### Misread column
 
-The report interprets `reported_tok_s` as useful generated-token throughput.
+The report assumes `reported_tok_s` represents useful generated-token throughput. However, it counts total processed tokens (prompt + generated), making comparisons across different prompt lengths misleading.
 
-However, the benchmark compares workloads with different prompt lengths and generation lengths, so `reported_tok_s` cannot be directly compared across rows.
+### Evidence
 
-### Honest goodput
-
-Batch 24
+Batch 24:
 
 Generated tokens:
-
 24 × 512 = 12288
 
 Wall clock:
-
 61.16 s
 
-Goodput:
+Generated-token goodput:
+12288 / 61.16 = **200.9 tok/s**
 
-12288 / 61.16 = **200.9 generated tokens/s**
+Observed:
 
-A second estimate using ITL produces a similar order of magnitude, confirming that useful decode throughput is much lower than the reported throughput counter.
+- Reported throughput = 1607.4 tok/s
+- Goodput = 200.9 tok/s
 
-### Correct conclusion
+Ratio:
+1607.4 / 200.9 ≈ 8×
 
-Longer prompts do **not** inherently improve serving throughput.
+This matches:
 
-The reported throughput metric mixes prompt prefill and decoding work and should not be extrapolated linearly for capacity planning.
+(3584 + 512) / 512 = 8
 
-The report incorrectly interprets `reported_tok_s` as useful generated-token throughput and compares workloads with different prompt lengths directly.
+indicating the reported metric counts prompt and generated tokens together.
 
-Using the benchmark log, actual generated-token goodput is:
+### Conclusion
 
-- Batch 24 (3584 prompt): 12288 generated tokens / 61.16 s = 200.9 tok/s
-
-This is substantially lower than the reported throughput of 1607.4 tok/s.
-
-Repeating the calculation across all long-context rows shows that generated-token goodput decreases beyond batch 24 (200.9 → 173.0 → 162.3 tok/s), contradicting the report's claim that throughput scales linearly with batch size or improves with longer prompts.
-
-The `reported_tok_s` counter appears to measure total processed tokens
-(prompt + generated), not only generated output.
-
-Evidence:
-
-Short workload:
-- Prompt = 512
-- Generation = 256
-- (512 + 256) / 256 = 3
-- Reported/Goodput = 3.00×
-
-Long workload:
-- Prompt = 3584
-- Generation = 512
-- (3584 + 512) / 512 = 8
-- Reported/Goodput = 8.00×
-
-Therefore, REPORT_v0 incorrectly compares `reported_tok_s` across workloads
-with different prompt lengths. This leads to the false conclusion that
-longer prompts improve throughput and that throughput scales linearly with
-batch size.
+Longer prompts do not inherently improve useful serving throughput. Capacity planning should rely on generated-token goodput rather than the reported throughput counter.
 
 ## B4
 
