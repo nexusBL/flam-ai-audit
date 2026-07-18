@@ -35,3 +35,101 @@ Ratio: 5.89×
 
 Conclusion:
 The original report is reproducible. Further investigation will focus on whether the methodology and metrics are correct rather than whether the implementation executes successfully.
+
+## Experiment 2 – Whitespace Tokenization
+
+### Hypothesis
+Using `split(" ")` instead of `split()` incorrectly counts empty strings created by multiple spaces as words.
+
+### Method
+Created a copy of `fertility.py` and replaced:
+
+```python
+line.split(" ")
+```
+
+with
+
+```python
+line.split()
+```
+
+All other logic remained unchanged.
+
+### Results
+
+| Metric | Original | Modified |
+|---------|---------:|---------:|
+| English fertility | 1.27 | 1.28 |
+| Hindi fertility | 7.45 | 7.60 |
+| Hindi/English ratio | 5.89× | 5.92× |
+
+### Conclusion
+
+The implementation is less robust because repeated spaces create empty tokens.
+However, the effect on the reported fertility values is very small and does not explain the report's main conclusions.
+
+## Experiment 3 – Aggregation Strategy
+
+### Hypothesis
+
+The script computes the average of per-line fertility values rather than the ratio of total tokens to total words.
+
+### Method
+
+Modified only the aggregation logic while leaving tokenization unchanged.
+
+### Results
+
+| Metric | Original | Modified |
+|---------|---------:|---------:|
+| English fertility | 1.27 | 1.25 |
+| Hindi fertility | 7.45 | 7.40 |
+| Hindi/English ratio | 5.89× | 5.91× |
+
+### Conclusion
+
+Changing the aggregation method produces only a small change.
+This implementation choice is not sufficient to explain the report's recommendation.
+
+## Experiment 4 – Tokenizer Comparison
+
+### Goal
+
+Determine whether the report's conclusions hold across different tokenizers.
+
+### Corpus
+
+500 aligned sentences in:
+
+- English
+- Hindi
+- Kannada
+- Tamil
+
+Prepared from the OPUS-100 multilingual parallel corpus.
+
+### Tokenizers
+
+1. GPT-2
+2. XLM-RoBERTa Base
+
+### Results
+
+| Language | GPT-2 tok/word | XLM-R tok/word |
+|----------|---------------:|---------------:|
+| English | 1.31 | 1.46 |
+| Hindi | 7.17 | 1.63 |
+| Kannada | 17.93 | 2.79 |
+| Tamil | 24.08 | 2.68 |
+
+### Observation
+
+GPT-2 produces dramatically more tokens for Indic languages than XLM-RoBERTa.
+
+### Conclusion
+
+The report's statement that "any tokenizer will struggle" is not supported.
+
+The observed fertility depends strongly on tokenizer choice.
+
